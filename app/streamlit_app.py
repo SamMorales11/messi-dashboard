@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ====================== CUSTOM CSS (MODERN ALBICELESTE THEME) ======================
+# ====================== CUSTOM CSS (PURE BLUE THEME) ======================
 st.markdown("""
 <style>
     /* Global Styles & Font */
@@ -21,13 +21,100 @@ st.markdown("""
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
+
+    /* Global Primary Accent Override (Pure Blue) */
+    :root {
+        --primary-color: #38BDF8 !important;
+    }
+
+    ::selection {
+        background-color: #0284C7 !important;
+        color: #FFFFFF !important;
+    }
     
+    /* ================= SIDEBAR / CONTROL PANEL ================= */
+    [data-testid="stSidebar"] {
+        background-color: #081028 !important;
+        border-right: 1px solid rgba(56, 189, 248, 0.15) !important;
+    }
+
+    [data-testid="stSidebar"] h3 {
+        color: #F8FAFC !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.3px !important;
+    }
+
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(56, 189, 248, 0.2) !important;
+        margin-top: 12px !important;
+        margin-bottom: 20px !important;
+    }
+
+    [data-testid="stSidebar"] label {
+        color: #94A3B8 !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+    }
+
+    /* Dropdown Styling */
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div {
+        background-color: #0F172A !important;
+        border: 1px solid rgba(56, 189, 248, 0.25) !important;
+        border-radius: 8px !important;
+        color: #F8FAFC !important;
+    }
+
+    [data-testid="stSidebar"] div[data-baseweb="select"]:hover > div {
+        border-color: #38BDF8 !important;
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.25) !important;
+    }
+
+    /* ================= FULL BLUE SLIDER OVERRIDE ================= */
+    /* Target ALL Text Elements Inside Slider */
+    [data-testid="stSidebar"] [data-testid="stSlider"] * {
+        color: #38BDF8 !important;
+    }
+
+    /* Slider Thumb Value Text (The numbers above the handles) */
+    [data-testid="stSidebar"] div[data-testid="stSliderThumbValue"],
+    [data-testid="stSidebar"] div[data-testid="stThumbValue"],
+    [data-testid="stSidebar"] [data-testid="stSlider"] [data-baseweb="tooltip"] {
+        color: #38BDF8 !important;
+        font-weight: 600 !important;
+    }
+
+    /* Slider Track Base (Inactive Background) */
+    [data-testid="stSidebar"] [data-testid="stSlider"] div[data-baseweb="slider"] > div {
+        background: rgba(56, 189, 248, 0.2) !important;
+    }
+
+    /* Slider Track Active Fill Line */
+    [data-testid="stSidebar"] [data-testid="stSlider"] div[data-baseweb="slider"] > div > div {
+        background: #38BDF8 !important;
+    }
+
+    /* Slider Circular Knobs / Handles */
+    [data-testid="stSidebar"] [data-testid="stSlider"] div[role="slider"],
+    [data-testid="stSidebar"] [data-testid="stSlider"] div[data-baseweb="thumb"] {
+        background-color: #38BDF8 !important;
+        border: 2px solid #081028 !important;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.6) !important;
+    }
+
+    /* Min / Max Labels Below */
+    [data-testid="stSidebar"] div[data-testid="stTickBarMin"],
+    [data-testid="stSidebar"] div[data-testid="stTickBarMax"] {
+        color: #38BDF8 !important;
+        font-weight: 600 !important;
+    }
+
+    /* ================= MAIN DASHBOARD UI ================= */
     /* Header Container Styling */
     .header-container {
         background: linear-gradient(135deg, #0A192F 0%, #0F2B48 50%, #1E3A8A 100%);
         padding: 24px 28px;
         border-radius: 14px;
-        border: 1px solid rgba(100, 181, 246, 0.2);
+        border: 1px solid rgba(100, 181, 246, 0.25);
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         margin-bottom: 24px;
     }
@@ -61,7 +148,7 @@ st.markdown("""
 
     /* KPI Metric Cards Custom */
     .kpi-card {
-        background: linear-gradient(145deg, #111827, #1F2937);
+        background: linear-gradient(145deg, #0F172A, #1E293B);
         border: 1px solid rgba(56, 189, 248, 0.2);
         border-radius: 12px;
         padding: 18px 20px;
@@ -84,7 +171,7 @@ st.markdown("""
     .kpi-label {
         font-size: 12px;
         font-weight: 600;
-        color: #9CA3AF;
+        color: #94A3B8;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 8px;
@@ -93,7 +180,7 @@ st.markdown("""
     .kpi-value {
         font-size: 32px;
         font-weight: 700;
-        color: #F9FAFB;
+        color: #F8FAFC;
         letter-spacing: -1px;
     }
 
@@ -106,12 +193,19 @@ st.markdown("""
 
     .stTabs [data-baseweb="tab"] {
         height: 42px;
-        background-color: transparent;
+        background-color: transparent !important;
         border-radius: 8px;
-        color: #94A3B8;
+        color: #94A3B8 !important;
         font-weight: 500;
         font-size: 14px;
         padding: 0px 18px;
+        border: none !important;
+        transition: all 0.2s ease;
+    }
+
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #38BDF8 !important;
+        background-color: rgba(56, 189, 248, 0.08) !important;
     }
 
     .stTabs [aria-selected="true"] {
@@ -119,6 +213,12 @@ st.markdown("""
         color: #38BDF8 !important;
         font-weight: 600 !important;
         border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    }
+
+    .stTabs [data-baseweb="tab-highlight-title"],
+    .stTabs [data-baseweb="tab-border"],
+    div[data-baseweb="tab-highlight"] {
+        background-color: #38BDF8 !important;
     }
     
     /* Dataframe Border Styling */
@@ -300,17 +400,17 @@ with tab1:
     fig.add_trace(go.Scatter(
         x=filtered_df['date'], y=filtered_df['career_goals'],
         mode='lines', name='Goals',
-        line=dict(color='#38BDF8', width=2.5)  # Albiceleste Light Blue
+        line=dict(color='#38BDF8', width=2.5)  # Sky Blue
     ))
     fig.add_trace(go.Scatter(
         x=filtered_df['date'], y=filtered_df['career_assists'],
         mode='lines', name='Assists',
-        line=dict(color='#818CF8', width=2.5)  # Soft Indigo
+        line=dict(color='#2563EB', width=2.5)  # Royal Blue
     ))
     fig.add_trace(go.Scatter(
         x=filtered_df['date'], y=filtered_df['career_goal_contributions'],
         mode='lines', name='Total G+A',
-        line=dict(color='#F59E0B', width=2.5)  # Gold Accent
+        line=dict(color='#93C5FD', width=2.5)  # Ice Blue
     ))
     
     fig.update_layout(
@@ -383,7 +483,7 @@ with tab3:
             y='goal_contribution',
             color='venue_type',
             text='goal_contribution',
-            color_discrete_sequence=['#38BDF8', '#1D4ED8', '#6366F1'],
+            color_discrete_sequence=['#38BDF8', '#2563EB', '#0284C7'],
             labels={'venue_type': 'Venue', 'goal_contribution': 'Goal Contributions'}
         )
         fig.update_layout(
@@ -425,7 +525,7 @@ with tab4:
         orientation='h',
         text='goal_contribution',
         color='goal_contribution',
-        color_continuous_scale=['#1E3A8A', '#38BDF8', '#7DD3FC'],
+        color_continuous_scale=['#0C4A6E', '#0284C7', '#38BDF8', '#7DD3FC'],
         labels={'goal_contribution': 'Goal Contributions', 'competition': 'Competition'}
     )
     fig.update_layout(
