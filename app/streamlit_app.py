@@ -15,14 +15,12 @@ st.set_page_config(
 # ====================== CUSTOM CSS (PURE BLUE THEME) ======================
 st.markdown("""
 <style>
-    /* Global Styles & Font */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
 
-    /* Global Primary Accent Override (Pure Blue) */
     :root {
         --primary-color: #38BDF8 !important;
     }
@@ -32,7 +30,7 @@ st.markdown("""
         color: #FFFFFF !important;
     }
     
-    /* ================= SIDEBAR / CONTROL PANEL ================= */
+    /* SIDEBAR */
     [data-testid="stSidebar"] {
         background-color: #081028 !important;
         border-right: 1px solid rgba(56, 189, 248, 0.15) !important;
@@ -56,7 +54,6 @@ st.markdown("""
         font-weight: 500 !important;
     }
 
-    /* Dropdown Styling */
     [data-testid="stSidebar"] div[data-baseweb="select"] > div {
         background-color: #0F172A !important;
         border: 1px solid rgba(56, 189, 248, 0.25) !important;
@@ -69,13 +66,11 @@ st.markdown("""
         box-shadow: 0 0 8px rgba(56, 189, 248, 0.25) !important;
     }
 
-    /* ================= FULL BLUE SLIDER OVERRIDE ================= */
-    /* Target ALL Text Elements Inside Slider */
+    /* SLIDER OVERRIDES */
     [data-testid="stSidebar"] [data-testid="stSlider"] * {
         color: #38BDF8 !important;
     }
 
-    /* Slider Thumb Value Text (The numbers above the handles) */
     [data-testid="stSidebar"] div[data-testid="stSliderThumbValue"],
     [data-testid="stSidebar"] div[data-testid="stThumbValue"],
     [data-testid="stSidebar"] [data-testid="stSlider"] [data-baseweb="tooltip"] {
@@ -83,17 +78,14 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Slider Track Base (Inactive Background) */
     [data-testid="stSidebar"] [data-testid="stSlider"] div[data-baseweb="slider"] > div {
         background: rgba(56, 189, 248, 0.2) !important;
     }
 
-    /* Slider Track Active Fill Line */
     [data-testid="stSidebar"] [data-testid="stSlider"] div[data-baseweb="slider"] > div > div {
         background: #38BDF8 !important;
     }
 
-    /* Slider Circular Knobs / Handles */
     [data-testid="stSidebar"] [data-testid="stSlider"] div[role="slider"],
     [data-testid="stSidebar"] [data-testid="stSlider"] div[data-baseweb="thumb"] {
         background-color: #38BDF8 !important;
@@ -101,15 +93,13 @@ st.markdown("""
         box-shadow: 0 0 10px rgba(56, 189, 248, 0.6) !important;
     }
 
-    /* Min / Max Labels Below */
     [data-testid="stSidebar"] div[data-testid="stTickBarMin"],
     [data-testid="stSidebar"] div[data-testid="stTickBarMax"] {
         color: #38BDF8 !important;
         font-weight: 600 !important;
     }
 
-    /* ================= MAIN DASHBOARD UI ================= */
-    /* Header Container Styling */
+    /* HEADER */
     .header-container {
         background: linear-gradient(135deg, #0A192F 0%, #0F2B48 50%, #1E3A8A 100%);
         padding: 24px 28px;
@@ -146,7 +136,7 @@ st.markdown("""
         margin-top: 10px;
     }
 
-    /* KPI Metric Cards Custom */
+    /* KPI CARDS */
     .kpi-card {
         background: linear-gradient(145deg, #0F172A, #1E293B);
         border: 1px solid rgba(56, 189, 248, 0.2);
@@ -184,7 +174,7 @@ st.markdown("""
         letter-spacing: -1px;
     }
 
-    /* Tab Styling Overrides */
+    /* TABS */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         border-bottom: 1px solid #1E293B;
@@ -221,7 +211,6 @@ st.markdown("""
         background-color: #38BDF8 !important;
     }
     
-    /* Dataframe Border Styling */
     [data-testid="stDataFrame"] {
         border: 1px solid #1E293B;
         border-radius: 8px;
@@ -235,10 +224,10 @@ st.markdown("""
 def load_data():
     df = pd.read_csv("data/messi dataset/messi_goals_assists_2008_2026.csv")
     
-    # Cleaning & Feature Engineering
     df['date'] = pd.to_datetime(df['date'])
     df['year'] = df['date'].dt.year
     df['month'] = df['date'].dt.month
+    df['year_month'] = df['date'].dt.to_period('M').astype(str)
     
     def standardize_club(club):
         if club == 'FC Barcelona':
@@ -287,7 +276,15 @@ selected_club = st.sidebar.selectbox("Filter by Club / National Team", clubs)
 venues = ['All Venues'] + sorted(df['venue_type'].unique().tolist())
 selected_venue = st.sidebar.selectbox("Filter by Venue", venues)
 
-# Year range slider
+# Competition filter
+competitions = ['All Competitions'] + sorted(df['competition'].unique().tolist())
+selected_competition = st.sidebar.selectbox("Filter by Competition", competitions)
+
+# Stage filter
+stages = ['All Stages'] + sorted(df['stage_category'].unique().tolist())
+selected_stage = st.sidebar.selectbox("Filter by Stage", stages)
+
+# Year range
 min_year = int(df['year'].min())
 max_year = int(df['year'].max())
 year_range = st.sidebar.slider("Select Year Range", min_year, max_year, (min_year, max_year))
@@ -301,12 +298,18 @@ if selected_club != 'All Clubs & Country':
 if selected_venue != 'All Venues':
     filtered_df = filtered_df[filtered_df['venue_type'] == selected_venue]
 
+if selected_competition != 'All Competitions':
+    filtered_df = filtered_df[filtered_df['competition'] == selected_competition]
+
+if selected_stage != 'All Stages':
+    filtered_df = filtered_df[filtered_df['stage_category'] == selected_stage]
+
 filtered_df = filtered_df[
     (filtered_df['year'] >= year_range[0]) & 
     (filtered_df['year'] <= year_range[1])
 ].copy()
 
-# Recalculate cumulative statistics dynamically
+# Recalculate cumulative on filtered data
 filtered_df['career_goals'] = filtered_df['goals'].cumsum()
 filtered_df['career_assists'] = filtered_df['assists'].cumsum()
 filtered_df['career_goal_contributions'] = filtered_df['goal_contribution'].cumsum()
@@ -332,9 +335,9 @@ st.markdown(f"""
 
 
 # ====================== KPI CARDS ======================
-total_goals = int(filtered_df['goals'].sum())
-total_assists = int(filtered_df['assists'].sum())
-total_contrib = int(filtered_df['goal_contribution'].sum())
+total_goals = int(filtered_df['goals'].sum()) if not filtered_df.empty else 0
+total_assists = int(filtered_df['assists'].sum()) if not filtered_df.empty else 0
+total_contrib = int(filtered_df['goal_contribution'].sum()) if not filtered_df.empty else 0
 total_matches = len(filtered_df)
 
 col1, col2, col3, col4 = st.columns(4)
@@ -384,11 +387,13 @@ plotly_layout_defaults = dict(
 )
 
 # ====================== TABS ======================
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Career Timeline", 
     "Performance by Team", 
     "Venue Analysis", 
-    "Competitions"
+    "Competitions",
+    "Milestones",
+    "Monthly Heatmap"
 ])
 
 # ----- TAB 1: Career Timeline -----
@@ -400,17 +405,17 @@ with tab1:
     fig.add_trace(go.Scatter(
         x=filtered_df['date'], y=filtered_df['career_goals'],
         mode='lines', name='Goals',
-        line=dict(color='#38BDF8', width=2.5)  # Sky Blue
+        line=dict(color='#38BDF8', width=2.5)
     ))
     fig.add_trace(go.Scatter(
         x=filtered_df['date'], y=filtered_df['career_assists'],
         mode='lines', name='Assists',
-        line=dict(color='#2563EB', width=2.5)  # Royal Blue
+        line=dict(color='#2563EB', width=2.5)
     ))
     fig.add_trace(go.Scatter(
         x=filtered_df['date'], y=filtered_df['career_goal_contributions'],
         mode='lines', name='Total G+A',
-        line=dict(color='#93C5FD', width=2.5)  # Ice Blue
+        line=dict(color='#93C5FD', width=2.5)
     ))
     
     fig.update_layout(
@@ -472,7 +477,10 @@ with tab3:
         'date': 'count'
     }).rename(columns={'date': 'matches'}).reset_index()
     
-    venue_stats['G+A per Match'] = (venue_stats['goal_contribution'] / venue_stats['matches']).round(2)
+    if not venue_stats.empty:
+        venue_stats['G+A per Match'] = (venue_stats['goal_contribution'] / venue_stats['matches']).round(2)
+    else:
+        venue_stats['G+A per Match'] = 0.0
     
     col_v1, col_v2 = st.columns([1.2, 1])
     
@@ -536,6 +544,103 @@ with tab4:
     fig.update_yaxes(categoryorder='total ascending')
     
     st.plotly_chart(fig, use_container_width=True)
+
+# ----- TAB 5: Milestones -----
+with tab5:
+    st.markdown("#### Career Goals Milestones")
+    
+    milestones = [100, 200, 300, 400, 500, 600, 650, 675]
+    milestone_data = []
+    
+    for m in milestones:
+        subset = filtered_df[filtered_df['career_goals'] >= m]
+        if len(subset) > 0:
+            row = subset.iloc[0]
+            
+            opponent = row.get('opponent', 'Opponent') if 'opponent' in row else 'N/A'
+            team_name = row.get('team', row.get('club', 'Team'))
+            
+            milestone_data.append({
+                'Milestone': f"{m} Goals",
+                'Date': row['date'].strftime('%Y-%m-%d'),
+                'Match': f"{team_name} vs {opponent}",
+                'Competition': row.get('competition', 'N/A'),
+                'Club': row.get('club', 'N/A'),
+                'Goals in Match': int(row['goals']),
+                'Career Goals': int(row['career_goals'])
+            })
+    
+    if milestone_data:
+        milestone_df = pd.DataFrame(milestone_data)
+        
+        fig = go.Figure()
+        color_map = {
+            'Barcelona': '#38BDF8',
+            'PSG': '#1D4ED8',
+            'Inter Miami': '#60A5FA',
+            'Argentina': '#7DD3FC'
+        }
+        
+        for _, row in milestone_df.iterrows():
+            fig.add_trace(go.Scatter(
+                x=[row['Date']],
+                y=[row['Milestone']],
+                mode='markers+text',
+                marker=dict(size=14, color=color_map.get(row['Club'], '#38BDF8')),
+                text=row['Date'],
+                textposition='middle right',
+                name=row['Club'],
+                hovertemplate=(
+                    f"<b>{row['Milestone']}</b><br>" +
+                    f"Date: {row['Date']}<br>" +
+                    f"Match: {row['Match']}<br>" +
+                    f"Competition: {row['Competition']}<br>" +
+                    f"Club: {row['Club']}<extra></extra>"
+                ),
+                showlegend=False
+            ))
+        
+        fig.update_layout(
+            **plotly_layout_defaults,
+            height=480
+        )
+        fig.update_yaxes(categoryorder='array', categoryarray=milestone_df['Milestone'].tolist()[::-1])
+        fig.update_xaxes(type='date')
+        
+        st.plotly_chart(fig, use_container_width=True)
+        st.dataframe(milestone_df, use_container_width=True, hide_index=True)
+    else:
+        st.info("No milestones reached with the current filters.")
+
+# ----- TAB 6: Monthly Heatmap -----
+with tab6:
+    st.markdown("#### Monthly Goal Contributions Heatmap")
+    
+    if not filtered_df.empty:
+        heatmap_data = filtered_df.groupby(['year', 'month'])['goal_contribution'].sum().reset_index()
+        heatmap_pivot = heatmap_data.pivot(index='month', columns='year', values='goal_contribution').fillna(0)
+        
+        month_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        
+        fig = px.imshow(
+            heatmap_pivot,
+            labels=dict(x="Year", y="Month", color="G+A"),
+            x=heatmap_pivot.columns,
+            y=[month_labels[i-1] for i in heatmap_pivot.index],
+            color_continuous_scale=['#0C4A6E', '#0284C7', '#38BDF8', '#7DD3FC', '#E0F2FE'],
+            aspect="auto"
+        )
+        
+        fig.update_layout(
+            **plotly_layout_defaults,
+            height=500
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("Warna lebih terang = semakin banyak goal contributions di bulan tersebut.")
+    else:
+        st.info("No data available for the selected filters.")
 
 # ====================== FOOTER ======================
 st.markdown("---")
