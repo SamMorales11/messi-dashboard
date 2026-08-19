@@ -1,0 +1,442 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime
+
+# ====================== PAGE CONFIG ======================
+st.set_page_config(
+    page_title="Lionel Messi | Career Analytics Dashboard",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ====================== CUSTOM CSS (MODERN ALBICELESTE THEME) ======================
+st.markdown("""
+<style>
+    /* Global Styles & Font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Header Container Styling */
+    .header-container {
+        background: linear-gradient(135deg, #0A192F 0%, #0F2B48 50%, #1E3A8A 100%);
+        padding: 24px 28px;
+        border-radius: 14px;
+        border: 1px solid rgba(100, 181, 246, 0.2);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        margin-bottom: 24px;
+    }
+    
+    .header-title {
+        color: #FFFFFF;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin: 0 0 6px 0;
+    }
+    
+    .header-subtitle {
+        color: #94A3B8;
+        font-size: 14px;
+        font-weight: 400;
+        margin: 0;
+    }
+    
+    .badge-period {
+        background-color: rgba(56, 189, 248, 0.15);
+        color: #38BDF8;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        display: inline-block;
+        margin-top: 10px;
+    }
+
+    /* KPI Metric Cards Custom */
+    .kpi-card {
+        background: linear-gradient(145deg, #111827, #1F2937);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 12px;
+        padding: 18px 20px;
+        text-align: left;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #38BDF8, #1D4ED8);
+    }
+    
+    .kpi-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #9CA3AF;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+    
+    .kpi-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #F9FAFB;
+        letter-spacing: -1px;
+    }
+
+    /* Tab Styling Overrides */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        border-bottom: 1px solid #1E293B;
+        padding-bottom: 4px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 42px;
+        background-color: transparent;
+        border-radius: 8px;
+        color: #94A3B8;
+        font-weight: 500;
+        font-size: 14px;
+        padding: 0px 18px;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: rgba(56, 189, 248, 0.12) !important;
+        color: #38BDF8 !important;
+        font-weight: 600 !important;
+        border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    }
+    
+    /* Dataframe Border Styling */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #1E293B;
+        border-radius: 8px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ====================== LOAD DATA ======================
+@st.cache_data
+def load_data():
+    df = pd.read_csv("data/messi dataset/messi_goals_assists_2008_2026.csv")
+    
+    # Cleaning & Feature Engineering
+    df['date'] = pd.to_datetime(df['date'])
+    df['year'] = df['date'].dt.year
+    df['month'] = df['date'].dt.month
+    
+    def standardize_club(club):
+        if club == 'FC Barcelona':
+            return 'Barcelona'
+        elif club in ['Paris Saint-Germain', 'PSG']:
+            return 'PSG'
+        elif 'Inter Miami' in str(club):
+            return 'Inter Miami'
+        elif club == 'Argentina':
+            return 'Argentina'
+        return club
+    
+    df['club'] = df['club_or_country'].apply(standardize_club)
+    df['is_international'] = df['club'] == 'Argentina'
+    df['venue_type'] = df['venue'].str.strip().str.title()
+    df['goal_contribution'] = df['goals'] + df['assists']
+    
+    def categorize_stage(stage):
+        stage = str(stage).lower()
+        if 'final' in stage:
+            return 'Final'
+        elif any(x in stage for x in ['semi', 'sf', 'quarter', 'qf', 'r16', 'round of 16', 'r32']):
+            return 'Knockout'
+        elif 'group' in stage:
+            return 'Group Stage'
+        elif 'league' in stage or 'matchday' in stage:
+            return 'League'
+        return 'Other'
+    
+    df['stage_category'] = df['stage'].apply(categorize_stage)
+    df = df.sort_values('date').reset_index(drop=True)
+    
+    return df
+
+df = load_data()
+
+# ====================== SIDEBAR FILTERS ======================
+st.sidebar.markdown("### Control Panel")
+st.sidebar.markdown("---")
+
+# Club filter
+clubs = ['All Clubs & Country'] + sorted(df['club'].unique().tolist())
+selected_club = st.sidebar.selectbox("Filter by Club / National Team", clubs)
+
+# Venue filter
+venues = ['All Venues'] + sorted(df['venue_type'].unique().tolist())
+selected_venue = st.sidebar.selectbox("Filter by Venue", venues)
+
+# Year range slider
+min_year = int(df['year'].min())
+max_year = int(df['year'].max())
+year_range = st.sidebar.slider("Select Year Range", min_year, max_year, (min_year, max_year))
+
+# Apply filters
+filtered_df = df.copy()
+
+if selected_club != 'All Clubs & Country':
+    filtered_df = filtered_df[filtered_df['club'] == selected_club]
+
+if selected_venue != 'All Venues':
+    filtered_df = filtered_df[filtered_df['venue_type'] == selected_venue]
+
+filtered_df = filtered_df[
+    (filtered_df['year'] >= year_range[0]) & 
+    (filtered_df['year'] <= year_range[1])
+].copy()
+
+# Recalculate cumulative statistics dynamically
+filtered_df['career_goals'] = filtered_df['goals'].cumsum()
+filtered_df['career_assists'] = filtered_df['assists'].cumsum()
+filtered_df['career_goal_contributions'] = filtered_df['goal_contribution'].cumsum()
+
+
+# ====================== HEADER ======================
+min_date_str = df['date'].min().strftime('%d %b %Y')
+max_date_str = df['date'].max().strftime('%d %b %Y')
+
+st.markdown(f"""
+<div class="header-container">
+    <div class="header-title">
+        Lionel Messi — Career Analytics Dashboard
+    </div>
+    <div class="header-subtitle">
+        Comprehensive performance metrics and historical goal contribution analysis
+    </div>
+    <div class="badge-period">
+        Data Period: {min_date_str} — {max_date_str}
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ====================== KPI CARDS ======================
+total_goals = int(filtered_df['goals'].sum())
+total_assists = int(filtered_df['assists'].sum())
+total_contrib = int(filtered_df['goal_contribution'].sum())
+total_matches = len(filtered_df)
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-label">Total Goals</div>
+        <div class="kpi-value">{total_goals:,}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-label">Total Assists</div>
+        <div class="kpi-value">{total_assists:,}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-label">Goal Contributions</div>
+        <div class="kpi-value">{total_contrib:,}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col4:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-label">Matches with G/A</div>
+        <div class="kpi-value">{total_matches:,}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ====================== PLOTLY LAYOUT DEFAULTS ======================
+plotly_layout_defaults = dict(
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    font=dict(family="Inter, sans-serif", color="#E2E8F0"),
+    xaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.06)', zeroline=False),
+    yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.06)', zeroline=False),
+    margin=dict(l=20, r=20, t=40, b=20)
+)
+
+# ====================== TABS ======================
+tab1, tab2, tab3, tab4 = st.tabs([
+    "Career Timeline", 
+    "Performance by Team", 
+    "Venue Analysis", 
+    "Competitions"
+])
+
+# ----- TAB 1: Career Timeline -----
+with tab1:
+    st.markdown("#### Cumulative Goal Contributions Timeline")
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=filtered_df['date'], y=filtered_df['career_goals'],
+        mode='lines', name='Goals',
+        line=dict(color='#38BDF8', width=2.5)  # Albiceleste Light Blue
+    ))
+    fig.add_trace(go.Scatter(
+        x=filtered_df['date'], y=filtered_df['career_assists'],
+        mode='lines', name='Assists',
+        line=dict(color='#818CF8', width=2.5)  # Soft Indigo
+    ))
+    fig.add_trace(go.Scatter(
+        x=filtered_df['date'], y=filtered_df['career_goal_contributions'],
+        mode='lines', name='Total G+A',
+        line=dict(color='#F59E0B', width=2.5)  # Gold Accent
+    ))
+    
+    fig.update_layout(
+        **plotly_layout_defaults,
+        hovermode='x unified',
+        height=480,
+        legend=dict(orientation='h', y=1.12, x=1, xanchor='right', font=dict(size=12))
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+# ----- TAB 2: By Club -----
+with tab2:
+    st.markdown("#### Goals & Assists Breakdown by Club / Country")
+    
+    club_stats = filtered_df.groupby('club').agg({
+        'goals': 'sum',
+        'assists': 'sum',
+        'goal_contribution': 'sum',
+        'date': 'count'
+    }).rename(columns={'date': 'matches'}).reset_index()
+    
+    fig = px.bar(
+        club_stats,
+        x='club',
+        y=['goals', 'assists'],
+        barmode='group',
+        text_auto=True,
+        color_discrete_map={'goals': '#38BDF8', 'assists': '#1D4ED8'},
+        labels={'value': 'Count', 'variable': 'Category', 'club': 'Team'}
+    )
+    fig.update_layout(
+        **plotly_layout_defaults,
+        height=420,
+        legend=dict(orientation='h', y=1.1, x=1, xanchor='right')
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    
+    st.dataframe(
+        club_stats.sort_values('goal_contribution', ascending=False),
+        column_config={
+            "club": "Team",
+            "goals": "Goals",
+            "assists": "Assists",
+            "goal_contribution": "Total G+A",
+            "matches": "Matches"
+        },
+        use_container_width=True,
+        hide_index=True
+    )
+
+# ----- TAB 3: Home vs Away -----
+with tab3:
+    st.markdown("#### Performance Metrics Across Venues")
+    
+    venue_stats = filtered_df.groupby('venue_type').agg({
+        'goals': 'sum',
+        'assists': 'sum',
+        'goal_contribution': 'sum',
+        'date': 'count'
+    }).rename(columns={'date': 'matches'}).reset_index()
+    
+    venue_stats['G+A per Match'] = (venue_stats['goal_contribution'] / venue_stats['matches']).round(2)
+    
+    col_v1, col_v2 = st.columns([1.2, 1])
+    
+    with col_v1:
+        fig = px.bar(
+            venue_stats,
+            x='venue_type',
+            y='goal_contribution',
+            color='venue_type',
+            text='goal_contribution',
+            color_discrete_sequence=['#38BDF8', '#1D4ED8', '#6366F1'],
+            labels={'venue_type': 'Venue', 'goal_contribution': 'Goal Contributions'}
+        )
+        fig.update_layout(
+            **plotly_layout_defaults,
+            showlegend=False,
+            height=400
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col_v2:
+        st.dataframe(
+            venue_stats,
+            column_config={
+                "venue_type": "Venue",
+                "goals": "Goals",
+                "assists": "Assists",
+                "goal_contribution": "Total G+A",
+                "matches": "Matches",
+                "G+A per Match": "G+A / Match"
+            },
+            use_container_width=True,
+            hide_index=True
+        )
+
+# ----- TAB 4: Competitions -----
+with tab4:
+    st.markdown("#### Top Competitions by Total Goal Contributions")
+    
+    comp_stats = filtered_df.groupby('competition').agg({
+        'goals': 'sum',
+        'assists': 'sum',
+        'goal_contribution': 'sum'
+    }).sort_values('goal_contribution', ascending=False).head(12).reset_index()
+    
+    fig = px.bar(
+        comp_stats,
+        x='goal_contribution',
+        y='competition',
+        orientation='h',
+        text='goal_contribution',
+        color='goal_contribution',
+        color_continuous_scale=['#1E3A8A', '#38BDF8', '#7DD3FC'],
+        labels={'goal_contribution': 'Goal Contributions', 'competition': 'Competition'}
+    )
+    fig.update_layout(
+        **plotly_layout_defaults,
+        height=480,
+        coloraxis_showscale=False
+    )
+    fig.update_yaxes(categoryorder='total ascending')
+    
+    st.plotly_chart(fig, use_container_width=True)
+
+# ====================== FOOTER ======================
+st.markdown("---")
+st.caption("Lionel Messi Career Analytics | Built with Streamlit & Plotly")
