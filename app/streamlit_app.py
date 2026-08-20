@@ -356,7 +356,7 @@ max_date_str = df['date'].max().strftime('%d %b %Y')
 
 st.markdown(f"""
 <div class="header-container">
-    <div class="header-title">Lionel Messi — Career Analytics Dashboard</div>
+    <div class="header-title">Lionel Messi Career Analytics Dashboard</div>
     <div class="header-subtitle">Comprehensive performance metrics and historical goal contribution analysis</div>
     <div class="badge-period">Data Period: {min_date_str} — {max_date_str}</div>
 </div>
