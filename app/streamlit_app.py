@@ -164,14 +164,20 @@ st.markdown("""
         color: #94A3B8;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
     
     .kpi-value {
-        font-size: 32px;
+        font-size: 30px;
         font-weight: 700;
         color: #F8FAFC;
         letter-spacing: -1px;
+    }
+
+    .kpi-delta {
+        font-size: 12px;
+        font-weight: 500;
+        margin-top: 4px;
     }
 
     /* TABS */
@@ -188,7 +194,7 @@ st.markdown("""
         color: #94A3B8 !important;
         font-weight: 500;
         font-size: 14px;
-        padding: 0px 18px;
+        padding: 0px 16px;
         border: none !important;
         transition: all 0.2s ease;
     }
@@ -258,6 +264,24 @@ def load_data():
         return 'Other'
     
     df['stage_category'] = df['stage'].apply(categorize_stage)
+    
+    # Club Era
+    def get_era(row):
+        if row['club'] == 'Barcelona':
+            if row['year'] <= 2012:
+                return 'Barcelona (Early)'
+            elif row['year'] <= 2017:
+                return 'Barcelona (Peak)'
+            else:
+                return 'Barcelona (Late)'
+        elif row['club'] == 'PSG':
+            return 'PSG Era'
+        elif row['club'] == 'Inter Miami':
+            return 'Inter Miami Era'
+        else:
+            return 'Argentina'
+    
+    df['era'] = df.apply(get_era, axis=1)
     df = df.sort_values('date').reset_index(drop=True)
     
     return df
@@ -268,23 +292,18 @@ df = load_data()
 st.sidebar.markdown("### Control Panel")
 st.sidebar.markdown("---")
 
-# Club filter
 clubs = ['All Clubs & Country'] + sorted(df['club'].unique().tolist())
 selected_club = st.sidebar.selectbox("Filter by Club / National Team", clubs)
 
-# Venue filter
 venues = ['All Venues'] + sorted(df['venue_type'].unique().tolist())
 selected_venue = st.sidebar.selectbox("Filter by Venue", venues)
 
-# Competition filter
 competitions = ['All Competitions'] + sorted(df['competition'].unique().tolist())
 selected_competition = st.sidebar.selectbox("Filter by Competition", competitions)
 
-# Stage filter
 stages = ['All Stages'] + sorted(df['stage_category'].unique().tolist())
 selected_stage = st.sidebar.selectbox("Filter by Stage", stages)
 
-# Year range
 min_year = int(df['year'].min())
 max_year = int(df['year'].max())
 year_range = st.sidebar.slider("Select Year Range", min_year, max_year, (min_year, max_year))
@@ -294,13 +313,10 @@ filtered_df = df.copy()
 
 if selected_club != 'All Clubs & Country':
     filtered_df = filtered_df[filtered_df['club'] == selected_club]
-
 if selected_venue != 'All Venues':
     filtered_df = filtered_df[filtered_df['venue_type'] == selected_venue]
-
 if selected_competition != 'All Competitions':
     filtered_df = filtered_df[filtered_df['competition'] == selected_competition]
-
 if selected_stage != 'All Stages':
     filtered_df = filtered_df[filtered_df['stage_category'] == selected_stage]
 
@@ -309,10 +325,29 @@ filtered_df = filtered_df[
     (filtered_df['year'] <= year_range[1])
 ].copy()
 
-# Recalculate cumulative on filtered data
+# Recalculate cumulative
 filtered_df['career_goals'] = filtered_df['goals'].cumsum()
 filtered_df['career_assists'] = filtered_df['assists'].cumsum()
 filtered_df['career_goal_contributions'] = filtered_df['goal_contribution'].cumsum()
+
+# Previous period calculation (for KPI delta)
+period_length = year_range[1] - year_range[0] + 1
+prev_start = year_range[0] - period_length
+prev_end = year_range[0] - 1
+
+prev_df = df[
+    (df['year'] >= max(min_year, prev_start)) & 
+    (df['year'] <= prev_end)
+].copy()
+
+if selected_club != 'All Clubs & Country':
+    prev_df = prev_df[prev_df['club'] == selected_club]
+if selected_venue != 'All Venues':
+    prev_df = prev_df[prev_df['venue_type'] == selected_venue]
+if selected_competition != 'All Competitions':
+    prev_df = prev_df[prev_df['competition'] == selected_competition]
+if selected_stage != 'All Stages':
+    prev_df = prev_df[prev_df['stage_category'] == selected_stage]
 
 
 # ====================== HEADER ======================
@@ -321,24 +356,40 @@ max_date_str = df['date'].max().strftime('%d %b %Y')
 
 st.markdown(f"""
 <div class="header-container">
-    <div class="header-title">
-        Lionel Messi — Career Analytics Dashboard
-    </div>
-    <div class="header-subtitle">
-        Comprehensive performance metrics and historical goal contribution analysis
-    </div>
-    <div class="badge-period">
-        Data Period: {min_date_str} — {max_date_str}
-    </div>
+    <div class="header-title">Lionel Messi — Career Analytics Dashboard</div>
+    <div class="header-subtitle">Comprehensive performance metrics and historical goal contribution analysis</div>
+    <div class="badge-period">Data Period: {min_date_str} — {max_date_str}</div>
 </div>
 """, unsafe_allow_html=True)
 
 
-# ====================== KPI CARDS ======================
+# ====================== KPI CARDS + COMPARISON ======================
 total_goals = int(filtered_df['goals'].sum()) if not filtered_df.empty else 0
 total_assists = int(filtered_df['assists'].sum()) if not filtered_df.empty else 0
 total_contrib = int(filtered_df['goal_contribution'].sum()) if not filtered_df.empty else 0
 total_matches = len(filtered_df)
+
+prev_goals = int(prev_df['goals'].sum()) if len(prev_df) > 0 else 0
+prev_assists = int(prev_df['assists'].sum()) if len(prev_df) > 0 else 0
+prev_contrib = int(prev_df['goal_contribution'].sum()) if len(prev_df) > 0 else 0
+prev_matches = len(prev_df)
+
+def calc_delta(current, previous):
+    if previous == 0:
+        return None
+    return round(((current - previous) / previous) * 100, 1)
+
+delta_goals = calc_delta(total_goals, prev_goals)
+delta_assists = calc_delta(total_assists, prev_assists)
+delta_contrib = calc_delta(total_contrib, prev_contrib)
+delta_matches = calc_delta(total_matches, prev_matches)
+
+def delta_html(delta):
+    if delta is None:
+        return ""
+    color = "#4ADE80" if delta >= 0 else "#F87171"
+    arrow = "↑" if delta >= 0 else "↓"
+    return f'<div class="kpi-delta" style="color:{color}">{arrow} {abs(delta)}% vs prev period</div>'
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -347,6 +398,7 @@ with col1:
     <div class="kpi-card">
         <div class="kpi-label">Total Goals</div>
         <div class="kpi-value">{total_goals:,}</div>
+        {delta_html(delta_goals)}
     </div>
     """, unsafe_allow_html=True)
 
@@ -355,6 +407,7 @@ with col2:
     <div class="kpi-card">
         <div class="kpi-label">Total Assists</div>
         <div class="kpi-value">{total_assists:,}</div>
+        {delta_html(delta_assists)}
     </div>
     """, unsafe_allow_html=True)
 
@@ -363,6 +416,7 @@ with col3:
     <div class="kpi-card">
         <div class="kpi-label">Goal Contributions</div>
         <div class="kpi-value">{total_contrib:,}</div>
+        {delta_html(delta_contrib)}
     </div>
     """, unsafe_allow_html=True)
 
@@ -371,10 +425,12 @@ with col4:
     <div class="kpi-card">
         <div class="kpi-label">Matches with G/A</div>
         <div class="kpi-value">{total_matches:,}</div>
+        {delta_html(delta_matches)}
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
+
 
 # ====================== PLOTLY LAYOUT DEFAULTS ======================
 plotly_layout_defaults = dict(
@@ -386,169 +442,102 @@ plotly_layout_defaults = dict(
     margin=dict(l=20, r=20, t=40, b=20)
 )
 
-# ====================== TABS ======================
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+
+# ====================== TABS (9 TABS) ======================
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "Career Timeline", 
     "Performance by Team", 
     "Venue Analysis", 
     "Competitions",
+    "Stage Performance",
+    "Club Era Comparison",
     "Milestones",
-    "Monthly Heatmap"
+    "Monthly Heatmap",
+    "Top Matches"
 ])
 
 # ----- TAB 1: Career Timeline -----
 with tab1:
     st.markdown("#### Cumulative Goal Contributions Timeline")
-    
     fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(
-        x=filtered_df['date'], y=filtered_df['career_goals'],
-        mode='lines', name='Goals',
-        line=dict(color='#38BDF8', width=2.5)
-    ))
-    fig.add_trace(go.Scatter(
-        x=filtered_df['date'], y=filtered_df['career_assists'],
-        mode='lines', name='Assists',
-        line=dict(color='#2563EB', width=2.5)
-    ))
-    fig.add_trace(go.Scatter(
-        x=filtered_df['date'], y=filtered_df['career_goal_contributions'],
-        mode='lines', name='Total G+A',
-        line=dict(color='#93C5FD', width=2.5)
-    ))
-    
-    fig.update_layout(
-        **plotly_layout_defaults,
-        hovermode='x unified',
-        height=480,
-        legend=dict(orientation='h', y=1.12, x=1, xanchor='right', font=dict(size=12))
-    )
+    fig.add_trace(go.Scatter(x=filtered_df['date'], y=filtered_df['career_goals'], mode='lines', name='Goals', line=dict(color='#38BDF8', width=2.5)))
+    fig.add_trace(go.Scatter(x=filtered_df['date'], y=filtered_df['career_assists'], mode='lines', name='Assists', line=dict(color='#2563EB', width=2.5)))
+    fig.add_trace(go.Scatter(x=filtered_df['date'], y=filtered_df['career_goal_contributions'], mode='lines', name='Total G+A', line=dict(color='#93C5FD', width=2.5)))
+    fig.update_layout(**plotly_layout_defaults, hovermode='x unified', height=480, legend=dict(orientation='h', y=1.12, x=1, xanchor='right'))
     st.plotly_chart(fig, use_container_width=True)
 
 # ----- TAB 2: By Club -----
 with tab2:
     st.markdown("#### Goals & Assists Breakdown by Club / Country")
-    
-    club_stats = filtered_df.groupby('club').agg({
-        'goals': 'sum',
-        'assists': 'sum',
-        'goal_contribution': 'sum',
-        'date': 'count'
-    }).rename(columns={'date': 'matches'}).reset_index()
-    
-    fig = px.bar(
-        club_stats,
-        x='club',
-        y=['goals', 'assists'],
-        barmode='group',
-        text_auto=True,
-        color_discrete_map={'goals': '#38BDF8', 'assists': '#1D4ED8'},
-        labels={'value': 'Count', 'variable': 'Category', 'club': 'Team'}
-    )
-    fig.update_layout(
-        **plotly_layout_defaults,
-        height=420,
-        legend=dict(orientation='h', y=1.1, x=1, xanchor='right')
-    )
+    club_stats = filtered_df.groupby('club').agg({'goals':'sum','assists':'sum','goal_contribution':'sum','date':'count'}).rename(columns={'date':'matches'}).reset_index()
+    fig = px.bar(club_stats, x='club', y=['goals','assists'], barmode='group', text_auto=True,
+                 color_discrete_map={'goals':'#38BDF8','assists':'#1D4ED8'})
+    fig.update_layout(**plotly_layout_defaults, height=420, legend=dict(orientation='h', y=1.1, x=1, xanchor='right'))
     st.plotly_chart(fig, use_container_width=True)
-    
-    st.dataframe(
-        club_stats.sort_values('goal_contribution', ascending=False),
-        column_config={
-            "club": "Team",
-            "goals": "Goals",
-            "assists": "Assists",
-            "goal_contribution": "Total G+A",
-            "matches": "Matches"
-        },
-        use_container_width=True,
-        hide_index=True
-    )
+    st.dataframe(club_stats.sort_values('goal_contribution', ascending=False), use_container_width=True, hide_index=True)
 
-# ----- TAB 3: Home vs Away -----
+# ----- TAB 3: Venue -----
 with tab3:
     st.markdown("#### Performance Metrics Across Venues")
-    
-    venue_stats = filtered_df.groupby('venue_type').agg({
-        'goals': 'sum',
-        'assists': 'sum',
-        'goal_contribution': 'sum',
-        'date': 'count'
-    }).rename(columns={'date': 'matches'}).reset_index()
-    
+    venue_stats = filtered_df.groupby('venue_type').agg({'goals':'sum','assists':'sum','goal_contribution':'sum','date':'count'}).rename(columns={'date':'matches'}).reset_index()
     if not venue_stats.empty:
         venue_stats['G+A per Match'] = (venue_stats['goal_contribution'] / venue_stats['matches']).round(2)
-    else:
-        venue_stats['G+A per Match'] = 0.0
     
     col_v1, col_v2 = st.columns([1.2, 1])
-    
     with col_v1:
-        fig = px.bar(
-            venue_stats,
-            x='venue_type',
-            y='goal_contribution',
-            color='venue_type',
-            text='goal_contribution',
-            color_discrete_sequence=['#38BDF8', '#2563EB', '#0284C7'],
-            labels={'venue_type': 'Venue', 'goal_contribution': 'Goal Contributions'}
-        )
-        fig.update_layout(
-            **plotly_layout_defaults,
-            showlegend=False,
-            height=400
-        )
+        fig = px.bar(venue_stats, x='venue_type', y='goal_contribution', color='venue_type', text='goal_contribution',
+                     color_discrete_sequence=['#38BDF8','#2563EB','#0284C7'])
+        fig.update_layout(**plotly_layout_defaults, showlegend=False, height=400)
         st.plotly_chart(fig, use_container_width=True)
-    
     with col_v2:
-        st.dataframe(
-            venue_stats,
-            column_config={
-                "venue_type": "Venue",
-                "goals": "Goals",
-                "assists": "Assists",
-                "goal_contribution": "Total G+A",
-                "matches": "Matches",
-                "G+A per Match": "G+A / Match"
-            },
-            use_container_width=True,
-            hide_index=True
-        )
+        st.dataframe(venue_stats, use_container_width=True, hide_index=True)
 
 # ----- TAB 4: Competitions -----
 with tab4:
     st.markdown("#### Top Competitions by Total Goal Contributions")
-    
-    comp_stats = filtered_df.groupby('competition').agg({
-        'goals': 'sum',
-        'assists': 'sum',
-        'goal_contribution': 'sum'
-    }).sort_values('goal_contribution', ascending=False).head(12).reset_index()
-    
-    fig = px.bar(
-        comp_stats,
-        x='goal_contribution',
-        y='competition',
-        orientation='h',
-        text='goal_contribution',
-        color='goal_contribution',
-        color_continuous_scale=['#0C4A6E', '#0284C7', '#38BDF8', '#7DD3FC'],
-        labels={'goal_contribution': 'Goal Contributions', 'competition': 'Competition'}
-    )
-    fig.update_layout(
-        **plotly_layout_defaults,
-        height=480,
-        coloraxis_showscale=False
-    )
+    comp_stats = filtered_df.groupby('competition').agg({'goals':'sum','assists':'sum','goal_contribution':'sum'}).sort_values('goal_contribution', ascending=False).head(12).reset_index()
+    fig = px.bar(comp_stats, x='goal_contribution', y='competition', orientation='h', text='goal_contribution',
+                 color='goal_contribution', color_continuous_scale=['#0C4A6E','#0284C7','#38BDF8','#7DD3FC'])
+    fig.update_layout(**plotly_layout_defaults, height=480, coloraxis_showscale=False)
     fig.update_yaxes(categoryorder='total ascending')
-    
     st.plotly_chart(fig, use_container_width=True)
 
-# ----- TAB 5: Milestones -----
+# ----- TAB 5: Stage Performance (NEW) -----
 with tab5:
-    st.markdown("#### Career Goals Milestones")
+    st.markdown("#### Performance by Match Stage")
+    stage_stats = filtered_df.groupby('stage_category').agg({
+        'goals':'sum', 'assists':'sum', 'goal_contribution':'sum', 'date':'count'
+    }).rename(columns={'date':'matches'}).reset_index()
     
+    if not stage_stats.empty:
+        stage_stats['G+A per Match'] = (stage_stats['goal_contribution'] / stage_stats['matches']).round(2)
+    
+    fig = px.bar(stage_stats, x='stage_category', y=['goals','assists'], barmode='group', text_auto=True,
+                 color_discrete_map={'goals':'#38BDF8','assists':'#1D4ED8'},
+                 category_orders={'stage_category': ['League','Group Stage','Knockout','Final','Other']})
+    fig.update_layout(**plotly_layout_defaults, height=420)
+    st.plotly_chart(fig, use_container_width=True)
+    st.dataframe(stage_stats.sort_values('goal_contribution', ascending=False), use_container_width=True, hide_index=True)
+
+# ----- TAB 6: Club Era Comparison (NEW) -----
+with tab6:
+    st.markdown("#### Club Era Comparison (Average G+A per Match)")
+    era_stats = filtered_df.groupby('era').agg({
+        'goals':'sum', 'assists':'sum', 'goal_contribution':'sum', 'date':'count'
+    }).rename(columns={'date':'matches'}).reset_index()
+    
+    if not era_stats.empty:
+        era_stats['G+A per Match'] = (era_stats['goal_contribution'] / era_stats['matches']).round(2)
+    
+    fig = px.bar(era_stats, x='era', y='G+A per Match', text='G+A per Match',
+                 color='G+A per Match', color_continuous_scale=['#0C4A6E','#38BDF8','#7DD3FC'])
+    fig.update_layout(**plotly_layout_defaults, height=420, coloraxis_showscale=False)
+    st.plotly_chart(fig, use_container_width=True)
+    st.dataframe(era_stats.sort_values('G+A per Match', ascending=False), use_container_width=True, hide_index=True)
+
+# ----- TAB 7: Milestones -----
+with tab7:
+    st.markdown("#### Career Goals Milestones")
     milestones = [100, 200, 300, 400, 500, 600, 650, 675]
     milestone_data = []
     
@@ -556,10 +545,8 @@ with tab5:
         subset = filtered_df[filtered_df['career_goals'] >= m]
         if len(subset) > 0:
             row = subset.iloc[0]
-            
-            opponent = row.get('opponent', 'Opponent') if 'opponent' in row else 'N/A'
+            opponent = row.get('opponent', 'N/A')
             team_name = row.get('team', row.get('club', 'Team'))
-            
             milestone_data.append({
                 'Milestone': f"{m} Goals",
                 'Date': row['date'].strftime('%Y-%m-%d'),
@@ -572,73 +559,72 @@ with tab5:
     
     if milestone_data:
         milestone_df = pd.DataFrame(milestone_data)
-        
         fig = go.Figure()
-        color_map = {
-            'Barcelona': '#38BDF8',
-            'PSG': '#1D4ED8',
-            'Inter Miami': '#60A5FA',
-            'Argentina': '#7DD3FC'
-        }
+        color_map = {'Barcelona': '#38BDF8', 'PSG': '#1D4ED8', 'Inter Miami': '#60A5FA', 'Argentina': '#7DD3FC'}
         
         for _, row in milestone_df.iterrows():
             fig.add_trace(go.Scatter(
-                x=[row['Date']],
-                y=[row['Milestone']],
-                mode='markers+text',
+                x=[row['Date']], y=[row['Milestone']], mode='markers+text',
                 marker=dict(size=14, color=color_map.get(row['Club'], '#38BDF8')),
-                text=row['Date'],
-                textposition='middle right',
-                name=row['Club'],
-                hovertemplate=(
-                    f"<b>{row['Milestone']}</b><br>" +
-                    f"Date: {row['Date']}<br>" +
-                    f"Match: {row['Match']}<br>" +
-                    f"Competition: {row['Competition']}<br>" +
-                    f"Club: {row['Club']}<extra></extra>"
-                ),
+                text=row['Date'], textposition='middle right', name=row['Club'],
+                hovertemplate=f"<b>{row['Milestone']}</b><br>Date: {row['Date']}<br>Match: {row['Match']}<br>Competition: {row['Competition']}<br>Club: {row['Club']}<extra></extra>",
                 showlegend=False
             ))
         
-        fig.update_layout(
-            **plotly_layout_defaults,
-            height=480
-        )
+        fig.update_layout(**plotly_layout_defaults, height=480)
         fig.update_yaxes(categoryorder='array', categoryarray=milestone_df['Milestone'].tolist()[::-1])
         fig.update_xaxes(type='date')
-        
         st.plotly_chart(fig, use_container_width=True)
         st.dataframe(milestone_df, use_container_width=True, hide_index=True)
     else:
         st.info("No milestones reached with the current filters.")
 
-# ----- TAB 6: Monthly Heatmap -----
-with tab6:
+# ----- TAB 8: Monthly Heatmap -----
+with tab8:
     st.markdown("#### Monthly Goal Contributions Heatmap")
-    
     if not filtered_df.empty:
         heatmap_data = filtered_df.groupby(['year', 'month'])['goal_contribution'].sum().reset_index()
         heatmap_pivot = heatmap_data.pivot(index='month', columns='year', values='goal_contribution').fillna(0)
         
-        month_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        month_labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
         
         fig = px.imshow(
             heatmap_pivot,
             labels=dict(x="Year", y="Month", color="G+A"),
             x=heatmap_pivot.columns,
             y=[month_labels[i-1] for i in heatmap_pivot.index],
-            color_continuous_scale=['#0C4A6E', '#0284C7', '#38BDF8', '#7DD3FC', '#E0F2FE'],
+            color_continuous_scale=['#0C4A6E','#0284C7','#38BDF8','#7DD3FC','#E0F2FE'],
             aspect="auto"
         )
-        
-        fig.update_layout(
-            **plotly_layout_defaults,
-            height=500
-        )
-        
+        fig.update_layout(**plotly_layout_defaults, height=500)
         st.plotly_chart(fig, use_container_width=True)
         st.caption("Warna lebih terang = semakin banyak goal contributions di bulan tersebut.")
+    else:
+        st.info("No data available for the selected filters.")
+
+# ----- TAB 9: Top Matches (NEW) -----
+with tab9:
+    st.markdown("#### Top 10 Matches by Goal Contributions")
+    
+    if not filtered_df.empty:
+        top_matches = filtered_df.nlargest(10, 'goal_contribution')[
+            ['date','team','opponent','competition','venue_type','goals','assists','goal_contribution','club']
+        ].copy()
+        top_matches['date'] = top_matches['date'].dt.strftime('%Y-%m-%d')
+        top_matches = top_matches.rename(columns={
+            'date':'Date', 'team':'Team', 'opponent':'Opponent', 'competition':'Competition',
+            'venue_type':'Venue', 'goals':'Goals', 'assists':'Assists',
+            'goal_contribution':'G+A', 'club':'Club'
+        })
+        
+        st.dataframe(top_matches, use_container_width=True, hide_index=True)
+        
+        fig = px.bar(top_matches, x='G+A', y='Opponent', orientation='h', text='G+A',
+                     color='G+A', color_continuous_scale=['#0C4A6E','#38BDF8'],
+                     hover_data=['Date','Competition','Goals','Assists'])
+        fig.update_layout(**plotly_layout_defaults, height=400, coloraxis_showscale=False)
+        fig.update_yaxes(categoryorder='total ascending')
+        st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No data available for the selected filters.")
 
