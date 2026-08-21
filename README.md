@@ -44,6 +44,7 @@ This project explores Messi’s career through data, focusing on matches where h
 ---
 
 ## 📁 Project Structure
+```bash
 messi-dashboard/
 ├── app/
 │   └── streamlit_app.py          # Main Streamlit application
@@ -54,6 +55,7 @@ messi-dashboard/
 │   └── 01_eda_and_preparation.ipynb
 ├── requirements.txt
 └── README.md
+   ```
 
 --
 ## 🚀 How to Run Locally
