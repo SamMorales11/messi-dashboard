@@ -79,3 +79,27 @@ pip install -r requirements.txt
 ```bash
 streamlit run app/streamlit_app.py
 ```
+
+**📈 Dataset**
+The dataset contains 531 matches in which Lionel Messi recorded at least one goal or assist, covering:
+
+675 Goals
+304 Assists
+979 Goal Contributions
+
+spanning his career at FC Barcelona, Paris Saint-Germain, Inter Miami, and the Argentina National Team.
+
+
+**📸 Dashboard Preview**
+
+<img src="assets/dashboard_overview.png" alt="Dashboard Overview">
+<img src="assets/career_timeline.png" alt="Career Timeline">
+<img src="assets/top_matches.png" alt="Top Matches">
+
+
+**✨ Future Improvements**
+
+Add player comparison (Messi vs other players)
+Include expected goals (xG) metrics
+Deploy advanced filtering with more granular stages
+Mobile-responsive optimization
