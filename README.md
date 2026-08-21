@@ -98,7 +98,7 @@ spanning his career at FC Barcelona, Paris Saint-Germain, Inter Miami, and the A
 <img src="assets/top_matches.png" alt="Top Matches">
 
 
-**✨ Future Improvements**
+## ✨ Future Improvements
 
 Add player comparison (Messi vs other players)
 Include expected goals (xG) metrics
