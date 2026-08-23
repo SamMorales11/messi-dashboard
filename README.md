@@ -93,9 +93,11 @@ spanning his career at FC Barcelona, Paris Saint-Germain, Inter Miami, and the A
 
 ## 📸 Dashboard Preview
 
-<img src="assets/dashboard_overview.png" alt="Dashboard Overview">
-<img src="assets/career_timeline.png" alt="Career Timeline">
-<img src="assets/top_matches.png" alt="Top Matches">
+<img width="992" height="364" alt="Screenshot 2026-08-24 073410" src="https://github.com/user-attachments/assets/963769f6-cbeb-423e-bd51-5a9f8f5c0195" />
+<img width="1004" height="590" alt="Screenshot 2026-08-24 073423" src="https://github.com/user-attachments/assets/4ade98e2-41da-453a-bc79-86f36405350d" />
+<img width="968" height="421" alt="Screenshot 2026-08-24 073442" src="https://github.com/user-attachments/assets/72b8bfb8-7f30-4d28-a30b-a2a27c4deef4" />
+<img width="989" height="195" alt="Screenshot 2026-08-24 073447" src="https://github.com/user-attachments/assets/75d0011f-60f5-46b7-8c8c-5b6badbed2c7" />
+
 
 
 ## ✨ Future Improvements
