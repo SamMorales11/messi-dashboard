@@ -1,3 +1,5 @@
+<img width="736" height="414" alt="The goat🐐" src="https://github.com/user-attachments/assets/0e621446-c818-44e2-ab65-147f4eafa2b1" />
+
 # 🐐 Lionel Messi Career Analytics Dashboard
 
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
