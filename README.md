@@ -1,4 +1,4 @@
-<img width="736" height="414" alt="The goat🐐" src="https://github.com/user-attachments/assets/0e621446-c818-44e2-ab65-147f4eafa2b1" />
+<img width="735" height="245" alt="download (17)" src="https://github.com/user-attachments/assets/f472f623-8f4d-4cb7-aff0-fb8ce821898c" />
 
 # 🐐 Lionel Messi Career Analytics Dashboard
 
