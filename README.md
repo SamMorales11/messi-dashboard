@@ -102,13 +102,10 @@ spanning his career at FC Barcelona, Paris Saint-Germain, Inter Miami, and the A
 <img width="1008" height="421" alt="Screenshot 2026-08-24 073456" src="https://github.com/user-attachments/assets/ee6d0cf9-52ce-4aa1-aa77-01f0da050789" />
 
 ## ✨ Future Improvements ##
-
 Add player comparison (Messi vs other players)
 Include expected goals (xG) metrics
 Deploy advanced filtering with more granular stages
 Mobile-responsive optimization
-
-
 
 ## 📄 License
 This project is open source and available under the MIT License.
