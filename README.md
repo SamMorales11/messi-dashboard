@@ -11,8 +11,6 @@ Interactive dashboard that analyzes Lionel Messi’s entire career goal contribu
 
 **Live Demo:** [Click here to open the dashboard](https://your-app-name.streamlit.app)
 
----
-
 ## 📊 Project Overview
 
 This project explores Messi’s career through data, focusing on matches where he recorded a goal or an assist. The dashboard provides interactive visualizations and filters to uncover performance patterns across different clubs, competitions, venues, and career stages.
