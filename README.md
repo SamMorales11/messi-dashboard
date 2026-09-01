@@ -56,7 +56,6 @@ messi-dashboard/
 ├── requirements.txt
 └── README.md
    ```
-
 --
 ## 🚀 How to Run Locally
 
@@ -103,7 +102,7 @@ spanning his career at FC Barcelona, Paris Saint-Germain, Inter Miami, and the A
 Add player comparison (Messi vs other players)
 Include expected goals (xG) metrics
 Deploy advanced filtering with more granular stages
-Mobile-responsive optimization
+Mobile responsive optimization
 
 ## 📄 License
 This project is open source and available under the MIT License.
